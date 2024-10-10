@@ -13,6 +13,7 @@
 
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Xml.Schema;
 
 class Program
 {
@@ -217,8 +218,13 @@ public class AssetManager
     public void DisplayList()
     {
         var sortedAssets = OrderList();
-        Console.WriteLine("# COMPANY ASSETS #");
-        Message.GenerateMessage("Type".PadRight(12) + "Brand".PadRight(12) + "Model".PadRight(18) + "Office".PadRight(12) + "Purchase Date".PadRight(18) + "Local Price".PadRight(12) + "Currency".PadRight(12) + "Price in USD", "Cyan");
+        Message.GenerateMessage("-----------------------------------------------------------------------------------------------------------------", "Blue");
+        Message.GenerateMessage("###### COMPANY ASSETS ######", "Blue");
+        Message.GenerateMessage("RED=end of life passed  ", "Red", true);
+        Message.GenerateMessage("YELLOW=end of life passed with more than 3 months", "Yellow");
+        Message.GenerateMessage("-----------------------------------------------------------------------------------------------------------------", "Blue");
+
+        Message.GenerateMessage("TYPE".PadRight(12) + "BRAND".PadRight(12) + "MODEL".PadRight(18) + "OFFICE".PadRight(12) + "PURCHASE DATE".PadRight(18) + "LOCAL PRICE".PadRight(12) + "CURRENCY".PadRight(12) + "PRICE IN USD", "Cyan");
         foreach (Asset asset in sortedAssets)
         {
             string assetInfo = asset.GetAssetType().PadRight(12) + asset.Brand.PadRight(12) + asset.Model.PadRight(18) + asset.Country.ToString().PadRight(12) + asset.PurchasedDate.ToString("yyyy-MM-dd").PadRight(18) + asset.Price.Value.ToString().PadRight(12) + asset.Price.Currency.ToString().PadRight(12) + asset.Price.ConvertToUSD().ToString("F2");
@@ -237,7 +243,8 @@ public class AssetManager
 }
 public class Message
 {
-    public static void GenerateMessage(string message, string color)
+    //Generating colorized messages 
+    public static void GenerateMessage(string message, string color, bool sameLine = false)
     {
         switch (color)
         {
@@ -247,7 +254,8 @@ public class Message
             case "Cyan": Console.ForegroundColor = ConsoleColor.Cyan; break;
             case "Blue": Console.ForegroundColor = ConsoleColor.Blue; break;
         }
-        Console.WriteLine(message);
+        if (sameLine) Console.Write(message);
+        else Console.WriteLine(message);
         Console.ResetColor();
     }
 }
