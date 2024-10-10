@@ -12,6 +12,8 @@
 
 
 using System.ComponentModel;
+using System.ComponentModel.Design;
+using System.Data;
 using System.Diagnostics;
 using System.Xml.Schema;
 
@@ -50,38 +52,202 @@ public class UserInput
         assetManager.AddAsset(new Computer(new Price(1200, Currency.EUR), DateTime.Now.AddMonths(-36 + 3), "Asus", "ROG 500", Country.germany));
         assetManager.AddAsset(new Computer(new Price(1300, Currency.EUR), DateTime.Now.AddMonths(-42), "Asus", "ROG 500", Country.germany));
 
-        ///ta emot input från användare om type (skapa en typ av objekt och fyll därefter på), brand, model, price in usd, country/office, purchase date
+        ///ta emot inpbrand, model, price in usd, country/office, purchase date
         while (true)
         {
+            TypeOfAsset assetType;
+            string brand;
+            string model;
+            decimal priceInUSD;
+            Country country;
+            DateTime purchaseDate;
+            Currency currency;
+
+            //Asset type
             while (true)
             {
-
-                //metod för att kolla att input inte är nr vid enum
                 try
                 {
                     Console.WriteLine("What kind of asset? Computer or phone?");
                     string input = Console.ReadLine().ToLower().Trim();
-
-                    if (Enum.TryParse(input, true, out TypeOfAsset assetType))
+                    if (Validator.ValidateIfEmpty(input))
                     {
-                        Console.WriteLine($"You entered: {assetType}");
+                        if (int.TryParse(input, out _))
+                        {
+                            throw new Exception("Not valid input, Don't use numbers.");
+                        }
+                        if (Enum.TryParse(input, out assetType))
+                        {
+                            Message.GenerateMessage("You entered " + assetType, "Green");
+
+                            break;
+                        }
+                        else { throw new Exception("Not valid input. Write computer or phone."); }
+                    }
+                    else { throw new ArgumentException("No input registered. Try again!"); }
+                }
+                catch (Exception e) { Message.GenerateMessage(e.Message, "Red"); }
+            }
+            //Brand
+            while (true)
+            {
+                try
+                {
+                    Console.WriteLine("What brand is the " + assetType + "?");
+                    string input = Console.ReadLine().ToLower().Trim();
+                    if (Validator.ValidateIfEmpty(input))
+                    {
+                        brand = input;
                         break;
                     }
-                    else
+                    else { throw new ArgumentException("No input registered. Try again!"); }
+                }
+                catch (Exception e) { Message.GenerateMessage(e.Message, "Red"); }
+            }
+            //Model
+            while (true)
+            {
+                try
+                {
+                    Console.WriteLine("What model?");
+                    string input = Console.ReadLine().ToLower().Trim();
+                    if (Validator.ValidateIfEmpty(input))
                     {
-                        Console.WriteLine("Invalid type of asset.");
+                        model = input;
+                        break;
+                    }
+                    else { throw new ArgumentException("No input registered. Try again!"); }
+                }
+                catch (Exception e) { Message.GenerateMessage(e.Message, "Red"); }
+            }
+            //Price in USD
+            while (true)
+            {
+                try
+                {
+                    Console.WriteLine("What did the " + assetType + " cost(in USD)?");
+                    string input = Console.ReadLine().ToLower().Trim();
+                    if (Validator.ValidateIfEmpty(input))
+                    {
+                        if (Validator.ValidateDecimal(input))
+                        {
+                            priceInUSD = decimal.Parse(input);
+                            break;
+                        }
+                        else { throw new FormatException("Not a correct number."); }
+                    }
+                    else { throw new ArgumentException("No input registered. Try again!"); }
+                }
+                catch (Exception e) { Message.GenerateMessage(e.Message, "Red"); }
+            }
+            //Country
+            while (true)
+            {
+                try
+                {
+                    Console.WriteLine("Where is the " + assetType + "? USA, Germany or Sweden?");
+                    string input = Console.ReadLine().ToLower().Trim();
+                    if (Validator.ValidateIfEmpty(input))
+                    {
+                        if (int.TryParse(input, out _))
+                        {
+                            throw new Exception("Not valid input, Don't use numbers.");
+                        }
+                        if (Enum.TryParse(input, out country))
+                        {
+                            Message.GenerateMessage("You entered " + country, "Green");
+
+                            break;
+                        }
+                        else { throw new Exception("Not valid input. Write USA, Germany or Sweden."); }
                     }
                 }
-                catch (Exception e) { Console.WriteLine($"An error occurred: {e.Message}"); }
+                catch (Exception e) { Message.GenerateMessage(e.Message, "Red"); }
+            }
+            while (true)
+            {
+                try
+                {
+                    Console.WriteLine("When was the " + assetType + " bought? Format date yyyy-MM-dd.");
+                    string input = Console.ReadLine().ToLower().Trim();
+                    if (Validator.ValidateIfEmpty(input))
+                    {
+                        if (DateTime.TryParse(input, out DateTime date))
+                        {
+                            purchaseDate = date;
+                            break;
+                        }
 
+                        else { throw new FormatException("Not valid format. Use format yyyy-MM-dd."); }
+                    }
+                }
+                catch (Exception e) { Message.GenerateMessage(e.Message, "Red"); }
             }
 
-            break;
+
+            currency = GetCurrency(country);
+
+
+            try
+            {
+                if (assetType == TypeOfAsset.computer)
+                {
+                    assetManager.AddAsset(new Computer(new Price(priceInUSD, currency), purchaseDate, brand, model, country));
+
+                    break;
+                }
+                else if (assetType == TypeOfAsset.phone)
+                {
+                    assetManager.AddAsset(new Phone(new Price(priceInUSD, currency), purchaseDate, brand, model, country));
+                    break;
+                }
+                else { throw new Exception("Couldn't add the asset"); }
+            }
+            catch (Exception e) { Message.GenerateMessage(e.Message, "Red"); }
         }
 
         assetManager.DisplayList();
     }
+    public static Currency GetCurrency(Country country)
+    {
+        switch (country)
+        {
+            case Country.usa: return Currency.USD;
+            case Country.sweden: return Currency.SEK;
+            case Country.germany: return Currency.EUR;
+            default:
+                throw new ArgumentException("Invalid country");
+        }
+    }
 }
+internal class Validator
+{
+    //Control if string is empty
+    public static bool ValidateIfEmpty(string inputString)
+    {
+        return !string.IsNullOrEmpty(inputString);
+
+    }
+    //Control if value is a decimal
+    public static bool ValidateDecimal(string inputPrice)
+    {
+        return decimal.TryParse(inputPrice, out decimal price);
+    }
+
+    public static bool ValidatedEnum<T>(string inputEnum) where T : struct
+    {
+        if (Enum.TryParse(inputEnum, out T result) && !int.TryParse(inputEnum, out _)) { return true; }
+        else { return false; }
+    }
+
+    public static bool ValidateDate(string inputString)
+    {
+        //kolla hur kontrollera datum
+        return true;
+    }
+}
+
+
 public enum TypeOfAsset { computer, phone }
 public enum Country { usa, germany, sweden }
 public enum MenuOption { q, a }
@@ -122,6 +288,10 @@ public abstract class Asset
 
 public class Computer : Asset
 {
+    public Computer()
+    {
+    }
+
     public Computer(Price price, DateTime purchasedDate, string brand, string model, Country country)
     {
         Price = price;
@@ -138,6 +308,10 @@ public class Computer : Asset
 
 public class Phone : Asset
 {
+    public Phone()
+    {
+    }
+
     public Phone(Price price, DateTime purchasedDate, string brand, string model, Country country)
     {
         Price = price;
@@ -169,21 +343,21 @@ public class Price
     public decimal Value { get; set; }
     public Currency Currency { get; set; }
 
-    //Convert to USD from EURO andSEK
-    public decimal ConvertToUSD()
+    //Convert from USD to EURO and SEK
+    public decimal ConvertFromUSD()
     {
-        decimal rateEURO = 1.1M;
-        decimal rateSEK = 0.097M;
-        decimal newValueInUSD = Value;
+        decimal rateEURO = 0.91M;
+        decimal rateSEK = 10.397M;
+        decimal newValue = Value;
         if (Currency == Currency.EUR)
         {
-            newValueInUSD = Value * rateEURO;
+            newValue = Value * rateEURO;
         }
         if (Currency == Currency.SEK)
         {
-            newValueInUSD = Value * rateSEK;
+            newValue = Value * rateSEK;
         }
-        return newValueInUSD;
+        return newValue;
     }
 }
 
@@ -227,7 +401,7 @@ public class AssetManager
         Message.GenerateMessage("TYPE".PadRight(12) + "BRAND".PadRight(12) + "MODEL".PadRight(18) + "OFFICE".PadRight(12) + "PURCHASE DATE".PadRight(18) + "LOCAL PRICE".PadRight(12) + "CURRENCY".PadRight(12) + "PRICE IN USD", "Cyan");
         foreach (Asset asset in sortedAssets)
         {
-            string assetInfo = asset.GetAssetType().PadRight(12) + asset.Brand.PadRight(12) + asset.Model.PadRight(18) + asset.Country.ToString().PadRight(12) + asset.PurchasedDate.ToString("yyyy-MM-dd").PadRight(18) + asset.Price.Value.ToString().PadRight(12) + asset.Price.Currency.ToString().PadRight(12) + asset.Price.ConvertToUSD().ToString("F2");
+            string assetInfo = asset.GetAssetType().PadRight(12) + asset.Brand.PadRight(12) + asset.Model.PadRight(18) + asset.Country.ToString().PadRight(12) + asset.PurchasedDate.ToString("yyyy-MM-dd").PadRight(18) + asset.Price.ConvertFromUSD().ToString("F2").ToString().PadRight(12) + asset.Price.Currency.ToString().PadRight(12) + asset.Price.Value;
             if (asset.IsOld)
             {
                 Message.GenerateMessage(assetInfo, "Red");
@@ -249,7 +423,7 @@ public class Message
         switch (color)
         {
             case "Red": Console.ForegroundColor = ConsoleColor.Red; break;
-            case "Geen": Console.ForegroundColor = ConsoleColor.Green; break;
+            case "Green": Console.ForegroundColor = ConsoleColor.Green; break;
             case "Yellow": Console.ForegroundColor = ConsoleColor.Yellow; break;
             case "Cyan": Console.ForegroundColor = ConsoleColor.Cyan; break;
             case "Blue": Console.ForegroundColor = ConsoleColor.Blue; break;
